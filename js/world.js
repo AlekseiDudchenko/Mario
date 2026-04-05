@@ -7,7 +7,10 @@ const groundHeight = 80;
 const platformHeight = 10;
 const checkpointWidth = 14;
 const checkpointHeight = 50;
-const maxLevel = 50;
+const maxDifficultyLevel = 15;
+const baseCheckpointInterval = 2;
+const checkpointIntervalGrowth = 5;
+const cheatCode = "iddqd";
 
 // Генерация платформ основана на физике прыжка и скорости персонажа.
 // Время в воздухе ≈ 2 * jumpVelocity / gravity.
@@ -22,15 +25,18 @@ const maxJumpHeight = (playerJumpVelocity * playerJumpVelocity) / (2 * playerGra
 let generatedUntilX = 0;
 const terrain = [];
 const checkpoints = [];
-const checkpointInterval = 2;
 
-let challengeCount = 0;
+let challengeCountSinceCheckpoint = 0;
 let pendingCheckpoint = false;
 let checkpointIdCounter = 0;
 let lastCheckpoint = null;
 let currentLevel = 1;
 let nextCheckpointLevel = 2;
 let chainIdCounter = 0;
+let mapViewMode = false;
+let gameplayWorldOffset = 0;
+let cheatModeEnabled = false;
+const mapViewPanSpeed = 14;
 const checkpointSound = new Audio("sources/check-point.mp3");
 checkpointSound.preload = "auto";
 
@@ -39,9 +45,61 @@ function playCheckpointSound() {
   checkpointSound.play().catch(() => {});
 }
 
+function toggleMapViewMode() {
+  if (mapViewMode) {
+    mapViewMode = false;
+    worldOffset = gameplayWorldOffset;
+    return;
+  }
+
+  gameplayWorldOffset = worldOffset;
+  mapViewMode = true;
+}
+
+function isMapViewActive() {
+  return mapViewMode;
+}
+
+function syncGameplayWorldOffset() {
+  gameplayWorldOffset = worldOffset;
+}
+
+function getPlayerWorldX() {
+  return spawnScreenX + gameplayWorldOffset;
+}
+
+function toggleCheatMode() {
+  cheatModeEnabled = !cheatModeEnabled;
+}
+
+function isCheatModeActive() {
+  return cheatModeEnabled;
+}
+
+function getMovementSpeed() {
+  return cheatModeEnabled ? speed * 2 : speed;
+}
+
 function updateWorld() {
-  if (keys["ArrowRight"]) worldOffset += speed;
-  if (keys["ArrowLeft"] && worldOffset > 0) worldOffset -= speed;
+  if (typeof consumeTypedCode === "function" && consumeTypedCode(cheatCode)) {
+    toggleCheatMode();
+  }
+
+  if (consumeKeyPress("m")) {
+    toggleMapViewMode();
+  }
+
+  if (mapViewMode) {
+    if (keys["ArrowRight"]) worldOffset += mapViewPanSpeed;
+    if (keys["ArrowLeft"]) worldOffset = Math.max(0, worldOffset - mapViewPanSpeed);
+    return;
+  }
+
+  const movementSpeed = getMovementSpeed();
+  if (keys["ArrowRight"]) worldOffset += movementSpeed;
+  if (keys["ArrowLeft"]) worldOffset = Math.max(0, worldOffset - movementSpeed);
+
+  syncGameplayWorldOffset();
 }
 
 function drawWorld(ctx, canvas) {
@@ -82,6 +140,7 @@ function drawWorld(ctx, canvas) {
     ctx.closePath();
     ctx.fill();
   }
+
 }
 
 function getTerrainSegmentsInRange(leftX, rightX) {
@@ -100,12 +159,20 @@ function snapToTile(value) {
   return Math.ceil(value / tileWidth) * tileWidth;
 }
 
-function clampLevel(level) {
-  return clamp(level, 1, maxLevel);
+function normalizeLevel(level) {
+  return Math.max(1, Math.floor(level));
+}
+
+function clampDifficultyLevel(level) {
+  return clamp(normalizeLevel(level), 1, maxDifficultyLevel);
+}
+
+function getCheckpointIntervalForLevel(level) {
+  return baseCheckpointInterval + Math.floor((normalizeLevel(level) - 1) / checkpointIntervalGrowth);
 }
 
 function getLevelConfig(level) {
-  const clampedLevel = clampLevel(level);
+  const clampedLevel = clampDifficultyLevel(level);
   const difficulty = 1 - Math.exp(-(clampedLevel - 1) / 8);
   const safeJumpDistance = Math.max(70, Math.floor(maxHorizontalJump * (0.72 + difficulty * 0.1)));
 
@@ -199,7 +266,7 @@ function addCheckpoint(x, surfaceY, level, isActive = false) {
     width: checkpointWidth,
     height: checkpointHeight,
     surfaceY,
-    level: clampLevel(level),
+    level: normalizeLevel(level),
     active: isActive
   };
 
@@ -236,7 +303,7 @@ function getCurrentLevel() {
 }
 
 function setCurrentLevel(level) {
-  currentLevel = clampLevel(level);
+  currentLevel = normalizeLevel(level);
 }
 
 function getCheckpointRespawnWorldX(checkpoint) {
@@ -299,7 +366,8 @@ function ensureWorldGenerated(canvas) {
 
     if (pendingCheckpoint && groundSegment.width >= 80) {
       addCheckpoint(groundSegment.x + 40, groundSegment.y, nextCheckpointLevel);
-      nextCheckpointLevel = clampLevel(nextCheckpointLevel + 1);
+      challengeCountSinceCheckpoint = 0;
+      nextCheckpointLevel += 1;
       pendingCheckpoint = false;
     }
 
@@ -315,8 +383,8 @@ function ensureWorldGenerated(canvas) {
       checkpointLevel: nextCheckpointLevel
     });
 
-    challengeCount += 1;
-    if (challengeCount % checkpointInterval === 0) {
+    challengeCountSinceCheckpoint += 1;
+    if (challengeCountSinceCheckpoint >= getCheckpointIntervalForLevel(currentLevel)) {
       pendingCheckpoint = true;
     }
 

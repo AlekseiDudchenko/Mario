@@ -26,17 +26,41 @@ const player = {
   hasPlayedFallSound: false,
 
   update() {
+    const cheatModeActive = typeof isCheatModeActive === "function" && isCheatModeActive();
     const playerLeftX = this.x + worldOffset;
     const playerRightX = this.x + this.width + worldOffset;
     const playerBottom = this.y + this.height;
 
-    this.vy += this.gravity;
+    if (cheatModeActive) {
+      const flightSpeed = 4;
+      this.vy = 0;
+
+      if (keys["ArrowUp"] || keys[" "]) this.y -= flightSpeed;
+      if (keys["ArrowDown"]) this.y += flightSpeed;
+
+      this.y = clamp(this.y, 0, canvas.height - this.height);
+    } else {
+      this.vy += this.gravity;
+      this.y += this.vy;
+    }
+
     const nextBottom = playerBottom + this.vy;
-    this.y += this.vy;
 
     this.onGround = false;
 
     let landingSegment = null;
+    let stompedEnemy = null;
+
+    for (let enemy of enemies) {
+      if (!enemy.alive) continue;
+      if (enemy.x >= playerRightX || enemy.x + enemy.width <= playerLeftX) continue;
+
+      if (!cheatModeActive && this.vy > 0 && playerBottom <= enemy.y && nextBottom >= enemy.y) {
+        if (!stompedEnemy || enemy.y < stompedEnemy.y) {
+          stompedEnemy = enemy;
+        }
+      }
+    }
 
     for (let segment of terrain) {
       if (segment.type !== "ground" && segment.type !== "platform") continue;
@@ -49,11 +73,41 @@ const player = {
       }
     }
 
-    if (landingSegment) {
+    if (stompedEnemy && (!landingSegment || stompedEnemy.y < landingSegment.y)) {
+      this.y = stompedEnemy.y - this.height;
+      this.vy = this.jump * 0.6;
+      defeatEnemy(stompedEnemy);
+      this.hasPlayedFallSound = false;
+    } else if (!cheatModeActive && landingSegment) {
       this.y = landingSegment.y - this.height;
       this.vy = 0;
       this.onGround = true;
       this.hasPlayedFallSound = false;
+    }
+
+    const resolvedPlayerLeftX = this.x + worldOffset;
+    const resolvedPlayerRightX = this.x + this.width + worldOffset;
+    const resolvedPlayerTop = this.y;
+    const resolvedPlayerBottom = this.y + this.height;
+
+    for (let enemy of enemies) {
+      if (!enemy.alive) continue;
+
+      const touchesEnemy =
+        resolvedPlayerRightX > enemy.x &&
+        resolvedPlayerLeftX < enemy.x + enemy.width &&
+        resolvedPlayerBottom > enemy.y &&
+        resolvedPlayerTop < enemy.y + enemy.height;
+
+      if (touchesEnemy) {
+        if (cheatModeActive) {
+          defeatEnemy(enemy);
+          continue;
+        }
+
+        this.respawn();
+        return;
+      }
     }
 
     if (this.onGround) {
@@ -71,12 +125,12 @@ const player = {
       }
     }
 
-    if (keys[" "] && this.onGround) {
+    if (!cheatModeActive && keys[" "] && this.onGround) {
       this.vy = this.jump;
       playJumpSound();
     }
 
-    if (!this.hasPlayedFallSound && this.vy > 0 && playerBottom > groundY) {
+    if (!cheatModeActive && !this.hasPlayedFallSound && this.vy > 0 && playerBottom > groundY) {
       playFallSound();
       this.hasPlayedFallSound = true;
     }
@@ -110,7 +164,14 @@ const player = {
   },
 
   draw(ctx) {
-    ctx.fillStyle = "red";
+    ctx.fillStyle = typeof isCheatModeActive === "function" && isCheatModeActive() ? "deepskyblue" : "red";
+
+    if (typeof isMapViewActive === "function" && isMapViewActive()) {
+      const screenX = getPlayerWorldX() - worldOffset;
+      ctx.fillRect(screenX, this.y, this.width, this.height);
+      return;
+    }
+
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
 };
