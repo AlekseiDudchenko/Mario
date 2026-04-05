@@ -58,6 +58,12 @@ function updatePowerups() {
   }
 }
 
+function resetPowerupsForRespawn() {
+  for (let mushroom of mushrooms) {
+    mushroom.collected = false;
+  }
+}
+
 function drawPowerups(ctx) {
   for (let mushroom of mushrooms) {
     if (mushroom.collected) continue;

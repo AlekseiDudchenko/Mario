@@ -206,6 +206,9 @@ const player = {
     }
 
     setCurrentLevel(checkpoint.level);
+    if (typeof resetDynamicContentForRespawn === "function") {
+      resetDynamicContentForRespawn();
+    }
     worldOffset = Math.max(0, getCheckpointRespawnWorldX(checkpoint) - this.x);
     ensureWorldGenerated(canvas);
 

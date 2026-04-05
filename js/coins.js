@@ -8,7 +8,8 @@ function createCoin(x, y) {
     y,
     width: coinSize,
     height: coinSize,
-    collected: false
+    collected: false,
+    persistent: true
   };
 }
 
@@ -17,7 +18,9 @@ function spawnCoinsForSection(section) {
 }
 
 function spawnRewardCoin(x, y) {
-  coins.push(createCoin(x - coinSize / 2, y - coinSize - 6));
+  const coin = createCoin(x - coinSize / 2, y - coinSize - 6);
+  coin.persistent = false;
+  coins.push(coin);
 }
 
 function collectCoin(coin) {
@@ -29,6 +32,17 @@ function collectCoin(coin) {
 
 function getCollectedCoinCount() {
   return collectedCoins;
+}
+
+function resetCoinsForRespawn() {
+  for (let index = coins.length - 1; index >= 0; index--) {
+    if (!coins[index].persistent) {
+      coins.splice(index, 1);
+      continue;
+    }
+
+    coins[index].collected = false;
+  }
 }
 
 function updateCoins() {

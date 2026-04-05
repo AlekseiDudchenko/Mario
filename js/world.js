@@ -310,6 +310,20 @@ function getCheckpointRespawnWorldX(checkpoint) {
   return Math.max(spawnScreenX, checkpoint.x - 40);
 }
 
+function resetDynamicContentForRespawn() {
+  if (typeof resetEnemiesForRespawn === "function") {
+    resetEnemiesForRespawn();
+  }
+
+  if (typeof resetCoinsForRespawn === "function") {
+    resetCoinsForRespawn();
+  }
+
+  if (typeof resetPowerupsForRespawn === "function") {
+    resetPowerupsForRespawn();
+  }
+}
+
 function registerSectionContent(section) {
   if (typeof spawnCoinsForSection === "function") {
     spawnCoinsForSection(section);

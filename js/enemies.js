@@ -3,15 +3,19 @@ const enemyWidth = 22;
 const enemyHeight = 18;
 
 function createEnemy(x, surfaceY, patrolMinX, patrolMaxX, speed) {
+  const initialVelocity = Math.random() < 0.5 ? -speed : speed;
+
   return {
     x,
     y: surfaceY - enemyHeight,
     width: enemyWidth,
     height: enemyHeight,
-    vx: Math.random() < 0.5 ? -speed : speed,
+    vx: initialVelocity,
     patrolMinX,
     patrolMaxX,
-    alive: true
+    alive: true,
+    startX: x,
+    startVx: initialVelocity
   };
 }
 
@@ -54,6 +58,14 @@ function defeatEnemy(enemy) {
 
   if (typeof spawnRewardCoin === "function") {
     spawnRewardCoin(enemy.x + enemy.width / 2, enemy.y);
+  }
+}
+
+function resetEnemiesForRespawn() {
+  for (let enemy of enemies) {
+    enemy.alive = true;
+    enemy.x = enemy.startX;
+    enemy.vx = enemy.startVx;
   }
 }
 

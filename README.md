@@ -17,6 +17,7 @@ This project implements a simple Mario-style game where the player controls a re
 - Coins that drop from defeated enemies and increase a HUD counter when collected
 - Mushrooms that make the player 30% bigger and improve jump height until an enemy hit removes the effect
 - Simple game over behavior when the player falls off-screen
+- Dying restores enemies, mushrooms, and coins from the latest checkpoint state
 
 ## Controls
 
