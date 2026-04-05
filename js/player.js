@@ -2,6 +2,8 @@ const jumpSound = new Audio("sources/jump.mp3");
 jumpSound.preload = "auto";
 const fallSound = new Audio("sources/wah.mp3");
 fallSound.preload = "auto";
+const playerSprite = new Image();
+playerSprite.src = "sources/cat.png";
 
 function playJumpSound() {
   jumpSound.currentTime = 0;
@@ -14,15 +16,15 @@ function playFallSound() {
 }
 
 const player = {
-  baseWidth: 20,
-  baseHeight: 20,
+  baseWidth: 24,
+  baseHeight: 24,
   baseJump: -10,
-  poweredScale: 1.3,
+  poweredScale: 2,
   poweredJumpMultiplier: 1.2,
   x: spawnScreenX,
   y: 200,
-  width: 20,
-  height: 20,
+  width: 24,
+  height: 24,
 
   vy: 0,
   gravity: 0.5,
@@ -221,20 +223,16 @@ const player = {
   },
 
   draw(ctx) {
-    if (typeof isCheatModeActive === "function" && isCheatModeActive()) {
-      ctx.fillStyle = "deepskyblue";
-    } else if (this.isPoweredUp) {
-      ctx.fillStyle = "darkorange";
-    } else {
-      ctx.fillStyle = "red";
-    }
+    const screenX = typeof isMapViewActive === "function" && isMapViewActive()
+      ? getPlayerWorldX() - worldOffset
+      : this.x;
 
-    if (typeof isMapViewActive === "function" && isMapViewActive()) {
-      const screenX = getPlayerWorldX() - worldOffset;
-      ctx.fillRect(screenX, this.y, this.width, this.height);
+    if (playerSprite.complete && playerSprite.naturalWidth > 0) {
+      ctx.drawImage(playerSprite, screenX, this.y, this.width, this.height);
       return;
     }
 
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillStyle = "red";
+    ctx.fillRect(screenX, this.y, this.width, this.height);
   }
 };
