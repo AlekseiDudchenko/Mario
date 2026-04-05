@@ -13,6 +13,10 @@ function draw() {
 
   drawWorld(ctx, canvas);
   player.draw(ctx);
+
+  ctx.fillStyle = "black";
+  ctx.font = "18px sans-serif";
+  ctx.fillText(`Level ${getCurrentLevel()}`, 16, 28);
 }
 
 function gameLoop() {

@@ -1,5 +1,5 @@
 const player = {
-  x: 200,
+  x: spawnScreenX,
   y: 200,
   width: 20,
   height: 20,
@@ -39,13 +39,49 @@ const player = {
       this.onGround = true;
     }
 
+    if (this.onGround) {
+      const groundedBottom = this.y + this.height;
+
+      for (let checkpoint of checkpoints) {
+        const touchesCheckpoint =
+          playerRightX >= checkpoint.x &&
+          playerLeftX <= checkpoint.x + checkpoint.width &&
+          Math.abs(groundedBottom - checkpoint.surfaceY) <= 2;
+
+        if (touchesCheckpoint) {
+          activateCheckpoint(checkpoint);
+        }
+      }
+    }
+
     if (keys[" "] && this.onGround) {
       this.vy = this.jump;
     }
 
     if (this.y > canvas.height) {
-      location.reload();
+      this.respawn();
     }
+  },
+
+  respawn() {
+    const checkpoint = getRespawnCheckpoint();
+
+    if (!checkpoint) {
+      worldOffset = 0;
+      setCurrentLevel(1);
+      this.y = groundY - this.height;
+      this.vy = 0;
+      this.onGround = true;
+      return;
+    }
+
+    setCurrentLevel(checkpoint.level);
+    worldOffset = Math.max(0, getCheckpointRespawnWorldX(checkpoint) - this.x);
+    ensureWorldGenerated(canvas);
+
+    this.y = checkpoint.surfaceY - this.height;
+    this.vy = 0;
+    this.onGround = true;
   },
 
   draw(ctx) {
