@@ -16,15 +16,15 @@ function playFallSound() {
 }
 
 const player = {
-  baseWidth: 24,
-  baseHeight: 24,
+  baseWidth: 26,
+  baseHeight: 26,
   baseJump: -10,
-  poweredScale: 2,
+  poweredScale: 1.6,
   poweredJumpMultiplier: 1.2,
   x: spawnScreenX,
   y: 200,
-  width: 24,
-  height: 24,
+  width: 26,
+  height: 26,
 
   vy: 0,
   gravity: 0.5,
