@@ -9,12 +9,13 @@ All game state is shared through globals loaded by script tags in `index.html`.
 ## File Roles
 
 - `index.html`: bootstraps the canvas and loads scripts in order.
-- `js/input.js`: keyboard state only.
-- `js/world.js`: world generation, terrain, checkpoints, level progression, and world rendering.
-- `js/coins.js`: coin state, future coin spawning, updates, and drawing.
-- `js/enemies.js`: enemy state, future enemy spawning, updates, and drawing.
-- `js/player.js`: player physics, landing, jump/fall sounds, checkpoint activation, and respawn.
-- `js/main.js`: game loop and HUD.
+- `js/input.js`: keyboard state, one-shot key presses, and typed cheat-code detection.
+- `js/world.js`: world generation, terrain, checkpoints, level progression, cheat-mode movement, respawn resets, and world rendering.
+- `js/coins.js`: coin state, enemy-drop coin spawning, collection, respawn resets, and drawing.
+- `js/enemies.js`: enemy spawning, patrol movement, defeat/reset logic, and drawing.
+- `js/powerups.js`: mushroom spawning, collection, respawn resets, and drawing.
+- `js/player.js`: player physics, growth state, jump/fall sounds, enemy interactions, checkpoint activation, and respawn.
+- `js/main.js`: game loop, HUD, and update/draw coordination for coins, enemies, and power-ups.
 - `sources/`: sound assets.
 
 ## Working Rules
@@ -30,9 +31,10 @@ All game state is shared through globals loaded by script tags in `index.html`.
 - `worldOffset` is the camera/world scroll source of truth.
 - `terrain` is the source of truth for collision surfaces and rendered platforms/ground.
 - `checkpoints` stores checkpoint state in world coordinates.
-- `coins` and `enemies` should also stay in world coordinates.
+- `coins`, `enemies`, and `mushrooms` should also stay in world coordinates.
 - `currentLevel` and `nextCheckpointLevel` control difficulty progression.
 - `player.js` is expected to consume world state defined in `world.js`.
+- Cheat-mode state stays global and must not break normal movement or map mode.
 
 ## Generation Constraints
 
@@ -51,14 +53,16 @@ All game state is shared through globals loaded by script tags in `index.html`.
 
 - A newly activated checkpoint advances progression.
 - Respawn must restore both the checkpoint position and the level stored on that checkpoint.
+- Respawn should restore dynamic entities from checkpoint state instead of rebuilding the terrain layout.
 - Checkpoints should be placed on safe surfaces after a completed challenge section, not in the middle of a required jump chain.
 - Keep checkpoint coordinates in world space so rendering and respawn stay aligned.
 
 ## Entity Rules
 
-- Add coins and enemies in their own files, not directly inside `player.js`.
+- Add coins, enemies, and power-ups in their own files, not directly inside `player.js`.
 - Generate entities from section data emitted by `world.js`, so terrain and content stay aligned.
-- Keep coins/enemies separate from `terrain`; they are interactive objects, not collision surfaces.
+- Keep coins/enemies/power-ups separate from `terrain`; they are interactive objects, not collision surfaces.
+- If an entity needs to come back after death, store enough spawn state to reset it cleanly.
 - Prefer adding simple arrays plus `spawn/update/draw` functions before introducing abstractions.
 
 ## Collision Rules
@@ -83,13 +87,18 @@ After changing gameplay code, verify at minimum:
 4. Checkpoints activate, play their sound, and respawn correctly.
 5. The current level shown in the HUD matches progression.
 6. Newly generated sections remain beatable after any difficulty changes.
-7. Coins and enemies, when added, appear aligned with the generated section that spawned them.
+7. Coins, enemies, and mushrooms appear aligned with the generated section that spawned them.
+8. After death, enemies, mushrooms, and coins reset correctly from the latest checkpoint state.
+9. Cheat mode still doubles movement speed, allows flight, and defeats enemies on contact without breaking normal gameplay.
 
 ## Current Status
 
-- `js/coins.js` and `js/enemies.js` exist as structural placeholders.
+- `js/coins.js`, `js/enemies.js`, and `js/powerups.js` contain active gameplay logic.
 - `world.js` already emits per-section data via `registerSectionContent(section)`.
-- `main.js` already calls `update/draw` hooks for coins and enemies.
+- `main.js` already calls `update/draw` hooks for coins, enemies, and power-ups.
+- Enemies kill on contact, die when stomped, and can drop reward coins.
+- Mushrooms grow the player by 30%, improve jump height, and are removed on enemy hit.
+- Respawn restores dynamic entities to checkpoint state instead of regenerating the terrain layout.
 - Future gameplay work should build on these hooks instead of moving new logic back into `world.js` or `player.js`.
 
 ## Preferred Change Strategy
