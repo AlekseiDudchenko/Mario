@@ -7,7 +7,7 @@ const groundHeight = 80;
 const platformHeight = 10;
 const checkpointWidth = 14;
 const checkpointHeight = 50;
-const maxLevel = 10;
+const maxLevel = 50;
 
 // Генерация платформ основана на физике прыжка и скорости персонажа.
 // Время в воздухе ≈ 2 * jumpVelocity / gravity.
@@ -30,6 +30,14 @@ let checkpointIdCounter = 0;
 let lastCheckpoint = null;
 let currentLevel = 1;
 let nextCheckpointLevel = 2;
+let chainIdCounter = 0;
+const checkpointSound = new Audio("sources/check-point.mp3");
+checkpointSound.preload = "auto";
+
+function playCheckpointSound() {
+  checkpointSound.currentTime = 0;
+  checkpointSound.play().catch(() => {});
+}
 
 function updateWorld() {
   if (keys["ArrowRight"]) worldOffset += speed;
@@ -98,36 +106,89 @@ function clampLevel(level) {
 
 function getLevelConfig(level) {
   const clampedLevel = clampLevel(level);
-  const difficulty = (clampedLevel - 1) / (maxLevel - 1);
-  const maxSupportedGap = Math.max(55, Math.floor(maxHorizontalJump - 28));
+  const difficulty = 1 - Math.exp(-(clampedLevel - 1) / 8);
+  const safeJumpDistance = Math.max(70, Math.floor(maxHorizontalJump * (0.72 + difficulty * 0.1)));
 
-  const minGroundRun = Math.round(90 - difficulty * 45);
-  const maxGroundRun = Math.round(140 - difficulty * 70);
-  const minHoleWidth = Math.round(30 + difficulty * 10);
-  const maxHoleWidth = Math.round(40 + difficulty * 20);
-  const minPlatformWidth = Math.round(110 - difficulty * 30);
-  const maxPlatformWidth = Math.round(150 - difficulty * 45);
-  const maxPlatformGap = Math.round(8 + difficulty * 20);
-  const minPlatformY = groundY - Math.round(maxJumpHeight * (0.35 + difficulty * 0.15));
-  const maxPlatformY = groundY - Math.round(25 + difficulty * 10);
-  const verticalRise = Math.round(25 + difficulty * 15);
-  const verticalDrop = Math.round(20 + difficulty * 10);
+  const minGroundRun = Math.round(112 - difficulty * 62);
+  const maxGroundRun = Math.round(160 - difficulty * 100);
+  const minHoleWidth = Math.round(30 + difficulty * 22);
+  const maxHoleWidth = Math.round(42 + difficulty * 30);
+  const minPlatformWidth = Math.round(120 - difficulty * 50);
+  const maxPlatformWidth = Math.round(158 - difficulty * 62);
+  const maxPlatformGap = Math.round(12 + difficulty * 24);
+  const minPlatformY = groundY - Math.round(maxJumpHeight * (0.32 + difficulty * 0.22));
+  const maxPlatformY = groundY - Math.round(20 + difficulty * 22);
+  const verticalRise = Math.round(22 + difficulty * 18);
+  const verticalDrop = Math.round(16 + difficulty * 16);
+  const chainChance = Math.max(0, difficulty - 0.08);
+  const maxChainLength = 2 + Math.min(2, Math.floor(difficulty * 3));
+  const minChainGap = Math.round(10 + difficulty * 10);
+  const maxChainGap = Math.round(18 + difficulty * 16);
 
   return {
     level: clampedLevel,
     minGroundRun,
     maxGroundRun: Math.max(minGroundRun, maxGroundRun),
     minHoleWidth,
-    maxHoleWidth: Math.min(maxSupportedGap, Math.max(minHoleWidth, maxHoleWidth)),
+    maxHoleWidth: Math.min(safeJumpDistance - 24, Math.max(minHoleWidth, maxHoleWidth)),
     minPlatformWidth,
     maxPlatformWidth: Math.max(minPlatformWidth, maxPlatformWidth),
     maxPlatformGap,
-    maxSupportedGap,
+    safeJumpDistance,
     minPlatformY,
     maxPlatformY: Math.max(minPlatformY, maxPlatformY),
     verticalRise,
-    verticalDrop
+    verticalDrop,
+    chainChance,
+    maxChainLength,
+    minChainGap,
+    maxChainGap
   };
+}
+
+function createPlatformSegment(x, y, width, chainId = null, chainIndex = 0, chainLength = 1) {
+  return {
+    type: "platform",
+    x,
+    y,
+    width,
+    height: platformHeight,
+    chainId,
+    chainIndex,
+    chainLength
+  };
+}
+
+function buildChallengePlatforms(levelConfig, holeStart, holeWidth, lastPlatformY) {
+  const firstGapLimit = Math.max(0, levelConfig.safeJumpDistance - holeWidth - 10);
+  const firstGap = getRandomInt(0, Math.min(levelConfig.maxPlatformGap, firstGapLimit));
+  const shouldUseChain = Math.random() < levelConfig.chainChance;
+  const chainLength = shouldUseChain ? getRandomInt(2, levelConfig.maxChainLength) : 1;
+  const chainId = chainLength > 1 ? chainIdCounter++ : null;
+  const platforms = [];
+
+  let previousPlatformEnd = holeStart + holeWidth;
+  let previousPlatformY = lastPlatformY;
+
+  for (let index = 0; index < chainLength; index++) {
+    const width = getRandomInt(levelConfig.minPlatformWidth, levelConfig.maxPlatformWidth);
+    const gap = index === 0
+      ? firstGap
+      : getRandomInt(levelConfig.minChainGap, Math.min(levelConfig.maxChainGap, levelConfig.safeJumpDistance - 18));
+    const x = previousPlatformEnd + gap;
+    const y = clamp(
+      previousPlatformY + getRandomInt(-Math.max(10, Math.floor(levelConfig.verticalRise * 0.75)), Math.max(8, Math.floor(levelConfig.verticalDrop * 0.65))),
+      levelConfig.minPlatformY,
+      levelConfig.maxPlatformY
+    );
+
+    platforms.push(createPlatformSegment(x, y, width, chainId, index, chainLength));
+
+    previousPlatformEnd = x + width;
+    previousPlatformY = y;
+  }
+
+  return platforms;
 }
 
 function addCheckpoint(x, surfaceY, level, isActive = false) {
@@ -163,6 +224,7 @@ function activateCheckpoint(checkpoint) {
   checkpoint.active = true;
   lastCheckpoint = checkpoint;
   currentLevel = checkpoint.level;
+  playCheckpointSound();
 }
 
 function getRespawnCheckpoint() {
@@ -202,11 +264,7 @@ function ensureWorldGenerated(canvas) {
     const levelConfig = getLevelConfig(currentLevel);
     const groundRun = getRandomInt(levelConfig.minGroundRun, levelConfig.maxGroundRun);
     const holeStart = generatedUntilX + groundRun;
-    let holeWidth = getRandomInt(levelConfig.minHoleWidth, levelConfig.maxHoleWidth);
-    const platformGapLimit = Math.max(0, levelConfig.maxSupportedGap - holeWidth);
-    const platformGap = getRandomInt(0, Math.min(levelConfig.maxPlatformGap, platformGapLimit));
-    const platformWidth = getRandomInt(levelConfig.minPlatformWidth, levelConfig.maxPlatformWidth);
-    const platformX = holeStart + holeWidth + platformGap;
+    const holeWidth = getRandomInt(levelConfig.minHoleWidth, levelConfig.maxHoleWidth);
 
     let lastPlatformY = groundY;
     for (let i = terrain.length - 1; i >= 0; i--) {
@@ -216,11 +274,8 @@ function ensureWorldGenerated(canvas) {
       }
     }
 
-    const platformY = clamp(
-      lastPlatformY + getRandomInt(-levelConfig.verticalRise, levelConfig.verticalDrop),
-      levelConfig.minPlatformY,
-      levelConfig.maxPlatformY
-    );
+    const challengePlatforms = buildChallengePlatforms(levelConfig, holeStart, holeWidth, lastPlatformY);
+    const lastChallengePlatform = challengePlatforms[challengePlatforms.length - 1];
 
     const groundSegment = {
       type: "ground",
@@ -228,13 +283,6 @@ function ensureWorldGenerated(canvas) {
       y: groundY,
       width: holeStart - generatedUntilX,
       height: groundHeight
-    };
-    const platformSegment = {
-      type: "platform",
-      x: platformX,
-      y: platformY,
-      width: platformWidth,
-      height: platformHeight
     };
 
     terrain.push(groundSegment);
@@ -245,13 +293,15 @@ function ensureWorldGenerated(canvas) {
       pendingCheckpoint = false;
     }
 
-    terrain.push(platformSegment);
+    for (let platform of challengePlatforms) {
+      terrain.push(platform);
+    }
 
     challengeCount += 1;
     if (challengeCount % checkpointInterval === 0) {
       pendingCheckpoint = true;
     }
 
-    generatedUntilX = platformX + platformWidth;
+    generatedUntilX = lastChallengePlatform.x + lastChallengePlatform.width;
   }
 }

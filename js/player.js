@@ -1,3 +1,18 @@
+const jumpSound = new Audio("sources/jump.mp3");
+jumpSound.preload = "auto";
+const fallSound = new Audio("sources/wah.mp3");
+fallSound.preload = "auto";
+
+function playJumpSound() {
+  jumpSound.currentTime = 0;
+  jumpSound.play().catch(() => {});
+}
+
+function playFallSound() {
+  fallSound.currentTime = 0;
+  fallSound.play().catch(() => {});
+}
+
 const player = {
   x: spawnScreenX,
   y: 200,
@@ -8,6 +23,7 @@ const player = {
   gravity: 0.5,
   jump: -10,
   onGround: false,
+  hasPlayedFallSound: false,
 
   update() {
     const playerLeftX = this.x + worldOffset;
@@ -37,6 +53,7 @@ const player = {
       this.y = landingSegment.y - this.height;
       this.vy = 0;
       this.onGround = true;
+      this.hasPlayedFallSound = false;
     }
 
     if (this.onGround) {
@@ -56,6 +73,12 @@ const player = {
 
     if (keys[" "] && this.onGround) {
       this.vy = this.jump;
+      playJumpSound();
+    }
+
+    if (!this.hasPlayedFallSound && this.vy > 0 && playerBottom > groundY) {
+      playFallSound();
+      this.hasPlayedFallSound = true;
     }
 
     if (this.y > canvas.height) {
@@ -72,6 +95,7 @@ const player = {
       this.y = groundY - this.height;
       this.vy = 0;
       this.onGround = true;
+      this.hasPlayedFallSound = false;
       return;
     }
 
@@ -82,6 +106,7 @@ const player = {
     this.y = checkpoint.surfaceY - this.height;
     this.vy = 0;
     this.onGround = true;
+    this.hasPlayedFallSound = false;
   },
 
   draw(ctx) {
