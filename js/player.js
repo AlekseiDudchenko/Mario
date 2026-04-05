@@ -10,53 +10,40 @@ const player = {
   onGround: false,
 
   update() {
+    const playerLeftX = this.x + worldOffset;
+    const playerRightX = this.x + this.width + worldOffset;
+    const playerBottom = this.y + this.height;
+
     this.vy += this.gravity;
+    const nextBottom = playerBottom + this.vy;
     this.y += this.vy;
 
     this.onGround = false;
 
-    // земля (бесконечная)
-    const playerLeftX = this.x + worldOffset;
-    const playerRightX = this.x + this.width + worldOffset;
+    let landingSegment = null;
 
-    if (!isFullyOverHole(playerLeftX, playerRightX)) {
-      if (this.y + this.height >= groundY) {
-        this.y = groundY - this.height;
-        this.vy = 0;
-        this.onGround = true;
+    for (let segment of terrain) {
+      if (segment.type !== "ground" && segment.type !== "platform") continue;
+      if (segment.x >= playerRightX || segment.x + segment.width <= playerLeftX) continue;
+
+      if (playerBottom <= segment.y && nextBottom >= segment.y) {
+        if (!landingSegment || segment.y < landingSegment.y) {
+          landingSegment = segment;
+        }
       }
     }
 
-    // коллизии
-    for (let platform of platforms) {
-      let platformX = platform.x - worldOffset;
-
-      const isAbovePlatform =
-        this.y + this.height <= platform.y + this.vy;
-
-      const isFallingOnPlatform =
-        this.y + this.height >= platform.y &&
-        this.y + this.height <= platform.y + 10;
-
-      const isWithinX =
-        this.x + this.width > platformX &&
-        this.x < platformX + platform.width;
-
-      if (isAbovePlatform && isFallingOnPlatform && isWithinX) {
-        this.y = platform.y - this.height;
-        this.vy = 0;
-        this.onGround = true;
-      }
+    if (landingSegment) {
+      this.y = landingSegment.y - this.height;
+      this.vy = 0;
+      this.onGround = true;
     }
 
-    // прыжок
     if (keys[" "] && this.onGround) {
       this.vy = this.jump;
     }
 
-    // смерть (упал вниз)
     if (this.y > canvas.height) {
-      //alert("Game Over");
       location.reload();
     }
   },

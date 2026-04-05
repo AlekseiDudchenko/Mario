@@ -1,6 +1,8 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+ensureWorldGenerated(canvas);
+
 function update() {
   updateWorld();
   player.update();
