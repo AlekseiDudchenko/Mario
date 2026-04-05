@@ -45,6 +45,15 @@ function isHoleAt(worldX) {
   return false;
 }
 
+function isFullyOverHole(leftX, rightX) {
+  for (let hole of holes) {
+    if (leftX >= hole.x && rightX <= hole.x + hole.width) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const platforms = [
  // { x: 200, y: 220, width: 100, height: 80 },  
   { x: 300, y: 170, width: 100, height: 10 },

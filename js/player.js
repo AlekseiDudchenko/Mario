@@ -16,9 +16,10 @@ const player = {
     this.onGround = false;
 
     // земля (бесконечная)
-    const playerCenterX = this.x + this.width / 2 + worldOffset;
+    const playerLeftX = this.x + worldOffset;
+    const playerRightX = this.x + this.width + worldOffset;
 
-    if (!isHoleAt(playerCenterX)) {
+    if (!isFullyOverHole(playerLeftX, playerRightX)) {
       if (this.y + this.height >= groundY) {
         this.y = groundY - this.height;
         this.vy = 0;
