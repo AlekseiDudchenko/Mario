@@ -4,15 +4,17 @@ A small browser-based platformer built with HTML5 Canvas and vanilla JavaScript.
 
 ## Overview
 
-This project implements a simple Mario-style game where the player controls a red square that can move through an infinite scrolling world, jump on platforms, and avoid falling through holes.
+This project implements a simple Mario-style game where the player controls a red square that can move through an endless generated world, jump on platforms, and avoid falling through holes.
 
 ## Features
 
 - HTML5 Canvas rendering
 - Keyboard input handling
-- Infinite ground scrolling
+- Endless level progression with gently increasing level length
 - Jumping and gravity physics
 - Platform collision detection
+- Black enemies that kill on contact and die when jumped on
+- Coins that drop from defeated enemies and increase a HUD counter when collected
 - Simple game over behavior when the player falls off-screen
 
 ## Controls
@@ -20,6 +22,9 @@ This project implements a simple Mario-style game where the player controls a re
 - `ArrowRight` — move world to the left (simulate moving right)
 - `ArrowLeft` — move world to the right (simulate moving left)
 - `Space` — jump
+- `M` — toggle map view mode
+- `IDDQD` — toggle cheat mode
+- `ArrowUp` / `ArrowDown` in cheat mode — fly up or down
 
 ## How to Run
 
@@ -41,3 +46,5 @@ This project implements a simple Mario-style game where the player controls a re
 - The game respawns from the latest checkpoint instead of fully resetting the page.
 - Terrain generation and difficulty scaling are centralized in `js/world.js`.
 - Coins and enemies are split into their own files so future mechanics do not accumulate inside one script.
+- In map view mode, gameplay is paused and the camera can be moved with the arrow keys to inspect the generated level.
+- Cheat mode doubles movement speed, allows flying, and defeats enemies on contact.
