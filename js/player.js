@@ -14,6 +14,11 @@ function playFallSound() {
 }
 
 const player = {
+  baseWidth: 20,
+  baseHeight: 20,
+  baseJump: -10,
+  poweredScale: 1.3,
+  poweredJumpMultiplier: 1.2,
   x: spawnScreenX,
   y: 200,
   width: 20,
@@ -24,9 +29,45 @@ const player = {
   jump: -10,
   onGround: false,
   hasPlayedFallSound: false,
+  isPoweredUp: false,
+  hurtTimer: 0,
+
+  getJumpVelocity() {
+    return this.isPoweredUp ? this.baseJump * this.poweredJumpMultiplier : this.baseJump;
+  },
+
+  applyMushroomPowerUp() {
+    if (this.isPoweredUp) {
+      return;
+    }
+
+    const previousHeight = this.height;
+    this.isPoweredUp = true;
+    this.width = Math.round(this.baseWidth * this.poweredScale);
+    this.height = Math.round(this.baseHeight * this.poweredScale);
+    this.jump = this.getJumpVelocity();
+    this.y -= this.height - previousHeight;
+  },
+
+  clearMushroomPowerUp() {
+    if (!this.isPoweredUp) {
+      return;
+    }
+
+    const previousHeight = this.height;
+    this.isPoweredUp = false;
+    this.width = this.baseWidth;
+    this.height = this.baseHeight;
+    this.jump = this.baseJump;
+    this.y += previousHeight - this.height;
+  },
 
   update() {
     const cheatModeActive = typeof isCheatModeActive === "function" && isCheatModeActive();
+    if (this.hurtTimer > 0) {
+      this.hurtTimer -= 1;
+    }
+
     const playerLeftX = this.x + worldOffset;
     const playerRightX = this.x + this.width + worldOffset;
     const playerBottom = this.y + this.height;
@@ -75,7 +116,7 @@ const player = {
 
     if (stompedEnemy && (!landingSegment || stompedEnemy.y < landingSegment.y)) {
       this.y = stompedEnemy.y - this.height;
-      this.vy = this.jump * 0.6;
+      this.vy = this.getJumpVelocity() * 0.6;
       defeatEnemy(stompedEnemy);
       this.hasPlayedFallSound = false;
     } else if (!cheatModeActive && landingSegment) {
@@ -92,6 +133,7 @@ const player = {
 
     for (let enemy of enemies) {
       if (!enemy.alive) continue;
+      if (this.hurtTimer > 0) continue;
 
       const touchesEnemy =
         resolvedPlayerRightX > enemy.x &&
@@ -102,6 +144,14 @@ const player = {
       if (touchesEnemy) {
         if (cheatModeActive) {
           defeatEnemy(enemy);
+          continue;
+        }
+
+        if (this.isPoweredUp) {
+          this.clearMushroomPowerUp();
+          this.hurtTimer = 45;
+          this.vy = -4;
+          this.y = Math.max(0, this.y - 6);
           continue;
         }
 
@@ -126,7 +176,7 @@ const player = {
     }
 
     if (!cheatModeActive && keys[" "] && this.onGround) {
-      this.vy = this.jump;
+      this.vy = this.getJumpVelocity();
       playJumpSound();
     }
 
@@ -146,10 +196,12 @@ const player = {
     if (!checkpoint) {
       worldOffset = 0;
       setCurrentLevel(1);
+      this.clearMushroomPowerUp();
       this.y = groundY - this.height;
       this.vy = 0;
       this.onGround = true;
       this.hasPlayedFallSound = false;
+      this.hurtTimer = 0;
       return;
     }
 
@@ -157,14 +209,22 @@ const player = {
     worldOffset = Math.max(0, getCheckpointRespawnWorldX(checkpoint) - this.x);
     ensureWorldGenerated(canvas);
 
+    this.clearMushroomPowerUp();
     this.y = checkpoint.surfaceY - this.height;
     this.vy = 0;
     this.onGround = true;
     this.hasPlayedFallSound = false;
+    this.hurtTimer = 0;
   },
 
   draw(ctx) {
-    ctx.fillStyle = typeof isCheatModeActive === "function" && isCheatModeActive() ? "deepskyblue" : "red";
+    if (typeof isCheatModeActive === "function" && isCheatModeActive()) {
+      ctx.fillStyle = "deepskyblue";
+    } else if (this.isPoweredUp) {
+      ctx.fillStyle = "darkorange";
+    } else {
+      ctx.fillStyle = "red";
+    }
 
     if (typeof isMapViewActive === "function" && isMapViewActive()) {
       const screenX = getPlayerWorldX() - worldOffset;

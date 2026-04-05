@@ -12,6 +12,7 @@ function update() {
 
   updateCoins();
   updateEnemies();
+  updatePowerups();
   player.update();
 }
 
@@ -21,6 +22,7 @@ function draw() {
   drawWorld(ctx, canvas);
   drawCoins(ctx);
   drawEnemies(ctx);
+  drawPowerups(ctx);
   player.draw(ctx);
 
   ctx.fillStyle = "black";

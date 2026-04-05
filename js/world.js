@@ -318,6 +318,10 @@ function registerSectionContent(section) {
   if (typeof spawnEnemiesForSection === "function") {
     spawnEnemiesForSection(section);
   }
+
+  if (typeof spawnPowerupsForSection === "function") {
+    spawnPowerupsForSection(section);
+  }
 }
 
 function ensureWorldGenerated(canvas) {

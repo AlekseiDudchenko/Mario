@@ -15,6 +15,7 @@ This project implements a simple Mario-style game where the player controls a re
 - Platform collision detection
 - Black enemies that kill on contact and die when jumped on
 - Coins that drop from defeated enemies and increase a HUD counter when collected
+- Mushrooms that make the player 30% bigger and improve jump height until an enemy hit removes the effect
 - Simple game over behavior when the player falls off-screen
 
 ## Controls
@@ -38,6 +39,7 @@ This project implements a simple Mario-style game where the player controls a re
 - `js/world.js` — world generation, terrain, checkpoints, level progression, and section hooks for content spawning
 - `js/coins.js` — coin state, spawning hooks, updates, and drawing
 - `js/enemies.js` — enemy state, spawning hooks, updates, and drawing
+- `js/powerups.js` — mushroom power-up spawning, collection, updates, and drawing
 - `js/player.js` — player physics, jumping, collision handling, checkpoints, and respawn logic
 - `js/main.js` — main game loop, draw/update coordination, and HUD
 
