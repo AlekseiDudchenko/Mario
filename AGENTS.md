@@ -11,6 +11,8 @@ All game state is shared through globals loaded by script tags in `index.html`.
 - `index.html`: bootstraps the canvas and loads scripts in order.
 - `js/input.js`: keyboard state only.
 - `js/world.js`: world generation, terrain, checkpoints, level progression, and world rendering.
+- `js/coins.js`: coin state, future coin spawning, updates, and drawing.
+- `js/enemies.js`: enemy state, future enemy spawning, updates, and drawing.
 - `js/player.js`: player physics, landing, jump/fall sounds, checkpoint activation, and respawn.
 - `js/main.js`: game loop and HUD.
 - `sources/`: sound assets.
@@ -28,6 +30,7 @@ All game state is shared through globals loaded by script tags in `index.html`.
 - `worldOffset` is the camera/world scroll source of truth.
 - `terrain` is the source of truth for collision surfaces and rendered platforms/ground.
 - `checkpoints` stores checkpoint state in world coordinates.
+- `coins` and `enemies` should also stay in world coordinates.
 - `currentLevel` and `nextCheckpointLevel` control difficulty progression.
 - `player.js` is expected to consume world state defined in `world.js`.
 
@@ -51,6 +54,13 @@ All game state is shared through globals loaded by script tags in `index.html`.
 - Checkpoints should be placed on safe surfaces after a completed challenge section, not in the middle of a required jump chain.
 - Keep checkpoint coordinates in world space so rendering and respawn stay aligned.
 
+## Entity Rules
+
+- Add coins and enemies in their own files, not directly inside `player.js`.
+- Generate entities from section data emitted by `world.js`, so terrain and content stay aligned.
+- Keep coins/enemies separate from `terrain`; they are interactive objects, not collision surfaces.
+- Prefer adding simple arrays plus `spawn/update/draw` functions before introducing abstractions.
+
 ## Collision Rules
 
 - The player should only land on visible terrain.
@@ -73,6 +83,14 @@ After changing gameplay code, verify at minimum:
 4. Checkpoints activate, play their sound, and respawn correctly.
 5. The current level shown in the HUD matches progression.
 6. Newly generated sections remain beatable after any difficulty changes.
+7. Coins and enemies, when added, appear aligned with the generated section that spawned them.
+
+## Current Status
+
+- `js/coins.js` and `js/enemies.js` exist as structural placeholders.
+- `world.js` already emits per-section data via `registerSectionContent(section)`.
+- `main.js` already calls `update/draw` hooks for coins and enemies.
+- Future gameplay work should build on these hooks instead of moving new logic back into `world.js` or `player.js`.
 
 ## Preferred Change Strategy
 

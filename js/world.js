@@ -243,6 +243,16 @@ function getCheckpointRespawnWorldX(checkpoint) {
   return Math.max(spawnScreenX, checkpoint.x - 40);
 }
 
+function registerSectionContent(section) {
+  if (typeof spawnCoinsForSection === "function") {
+    spawnCoinsForSection(section);
+  }
+
+  if (typeof spawnEnemiesForSection === "function") {
+    spawnEnemiesForSection(section);
+  }
+}
+
 function ensureWorldGenerated(canvas) {
   const generateAhead = worldOffset + canvas.width * 2;
 
@@ -296,6 +306,14 @@ function ensureWorldGenerated(canvas) {
     for (let platform of challengePlatforms) {
       terrain.push(platform);
     }
+
+    registerSectionContent({
+      level: currentLevel,
+      ground: groundSegment,
+      platforms: challengePlatforms,
+      checkpointPlanned: pendingCheckpoint,
+      checkpointLevel: nextCheckpointLevel
+    });
 
     challengeCount += 1;
     if (challengeCount % checkpointInterval === 0) {

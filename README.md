@@ -30,11 +30,14 @@ This project implements a simple Mario-style game where the player controls a re
 
 - `index.html` — main HTML file containing the canvas and script imports
 - `js/input.js` — keyboard input tracking
-- `js/world.js` — world rendering, platform and hole definitions, and horizontal scrolling
-- `js/player.js` — player physics, jumping, collision handling, and death/reset logic
-- `js/main.js` — main game loop and draw/update cycle
+- `js/world.js` — world generation, terrain, checkpoints, level progression, and section hooks for content spawning
+- `js/coins.js` — coin state, spawning hooks, updates, and drawing
+- `js/enemies.js` — enemy state, spawning hooks, updates, and drawing
+- `js/player.js` — player physics, jumping, collision handling, checkpoints, and respawn logic
+- `js/main.js` — main game loop, draw/update coordination, and HUD
 
 ## Notes
 
-- The game resets when the player falls below the visible canvas.
-- Platform positions and hole sizes are defined in `js/world.js` and can be easily adjusted.
+- The game respawns from the latest checkpoint instead of fully resetting the page.
+- Terrain generation and difficulty scaling are centralized in `js/world.js`.
+- Coins and enemies are split into their own files so future mechanics do not accumulate inside one script.

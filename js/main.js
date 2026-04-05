@@ -5,6 +5,8 @@ ensureWorldGenerated(canvas);
 
 function update() {
   updateWorld();
+  updateCoins();
+  updateEnemies();
   player.update();
 }
 
@@ -12,6 +14,8 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   drawWorld(ctx, canvas);
+  drawCoins(ctx);
+  drawEnemies(ctx);
   player.draw(ctx);
 
   ctx.fillStyle = "black";
